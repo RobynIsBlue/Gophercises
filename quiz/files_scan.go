@@ -1,16 +1,18 @@
 package main
 
 import (
+	"bufio"
 	"encoding/csv"
 	"fmt"
 	"io"
 	"os"
+	"strings"
 )
 
-// type problem struct {
-// 	question string
-// 	answer   string
-// }
+type problem struct {
+	question string
+	answer   string
+}
 
 func GetUserInputAndScan(filename string) {
 
@@ -22,6 +24,8 @@ func GetUserInputAndScan(filename string) {
 	defer body.Close()
 	reader := csv.NewReader(body)
 
+	numTotal := 0
+	numCorrect := 0
 	for {
 		line, err := reader.Read()
 		if err == io.EOF {
@@ -33,11 +37,25 @@ func GetUserInputAndScan(filename string) {
 			return
 		}
 
-		fmt.Println(line)
+		numTotal++
+		lineProblem := parseCSVInput(line)
+		fmt.Printf("Problem %d: %v   ", numTotal, lineProblem.question)
+		input, err := bufio.NewReader(os.Stdin).ReadString('\n')
+		input = strings.TrimSpace(input)
+		if err != nil {
+			fmt.Printf("could not read input: %v", err)
+			return
+		}
+		if string(input) == lineProblem.answer {
+			numCorrect++
+		}
 	}
-	fmt.Println("we good!!!!")
+	fmt.Printf("--------------------\nCorrect: %d\nTotal: %d\nPercentage: %.2f%%", numCorrect, numTotal, (float32(numCorrect)/float32(numTotal))*100)
 }
 
-// func parseCSVInput(csvInput string) {
-
-// }
+func parseCSVInput(csvInput []string) problem {
+	return problem{
+		question: strings.Join(csvInput[:len(csvInput)-1], ""),
+		answer:   csvInput[len(csvInput)-1],
+	}
+}
