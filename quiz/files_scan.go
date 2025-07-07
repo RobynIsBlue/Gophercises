@@ -14,8 +14,7 @@ type problem struct {
 	answer   string
 }
 
-func GetUserInputAndScan(filename string) {
-
+func GetUserInputAndScan(filename string, timePerQuestion int) {
 	body, err := os.Open(filename)
 	if err != nil {
 		fmt.Printf("could not open file: %v", err)
@@ -23,25 +22,28 @@ func GetUserInputAndScan(filename string) {
 	}
 	defer body.Close()
 	reader := csv.NewReader(body)
-
+	readerInput := bufio.NewReader(os.Stdin)
 	numTotal := 0
 	numCorrect := 0
+
+	questionAnsweredBool := make(chan bool)
 	for {
+
 		line, err := reader.Read()
 		if err == io.EOF {
 			break
 		}
-
 		if err != nil {
 			fmt.Printf("could not read line: %v", err)
 			return
 		}
-
 		numTotal++
+
 		lineProblem := parseCSVInput(line)
 		fmt.Printf("Problem %d: %v   ", numTotal, lineProblem.question)
-		input, err := bufio.NewReader(os.Stdin).ReadString('\n')
+		input, err := readerInput.ReadString('\n')
 		input = strings.TrimSpace(input)
+
 		if err != nil {
 			fmt.Printf("could not read input: %v", err)
 			return
