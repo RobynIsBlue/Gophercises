@@ -4,9 +4,9 @@ import (
 	"bufio"
 	"encoding/csv"
 	"fmt"
-	"io"
 	"os"
 	"strings"
+	"time"
 )
 
 type problem struct {
@@ -14,50 +14,60 @@ type problem struct {
 	answer   string
 }
 
-func GetUserInputAndScan(filename string, timePerQuestion int) {
-	body, err := os.Open(filename)
+func GetUserInputAndScan(filename string, timePerQuestion, timeTotal int) {
+	body, err := os.ReadFile(filename)
 	if err != nil {
 		fmt.Printf("could not open file: %v", err)
 		return
 	}
-	defer body.Close()
-	reader := csv.NewReader(body)
+	splitBody := strings.Split(string(body), "\r\n")
+
 	readerInput := bufio.NewReader(os.Stdin)
-	numTotal := 0
+	numTotal := len(splitBody)
 	numCorrect := 0
+	timer := time.NewTimer(time.Second * time.Duration(timePerQuestion))
+	quizChan := make(chan string)
+	bigTimer := time.NewTimer(time.Second * time.Duration(timeTotal))
 
-	questionAnsweredBool := make(chan bool)
-	for {
-
-		line, err := reader.Read()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			fmt.Printf("could not read line: %v", err)
-			return
-		}
-		numTotal++
-
+bigLoop:
+	for i, line := range splitBody {
+		timer.Reset(time.Second * time.Duration(timePerQuestion))
 		lineProblem := parseCSVInput(line)
-		fmt.Printf("Problem %d: %v   ", numTotal, lineProblem.question)
-		input, err := readerInput.ReadString('\n')
-		input = strings.TrimSpace(input)
+		go func() {
+			fmt.Printf("Problem %d: %v   ", i+1, lineProblem.question)
+			input, err := readerInput.ReadString('\n')
+			input = strings.TrimSpace(input)
 
-		if err != nil {
-			fmt.Printf("could not read input: %v", err)
-			return
-		}
-		if string(input) == lineProblem.answer {
-			numCorrect++
+			if err != nil {
+				fmt.Printf("could not read input: %v", err)
+				return
+			}
+			quizChan <- input
+		}()
+
+		select {
+		case <-bigTimer.C:
+			break bigLoop
+		case <-timer.C:
+			fmt.Println()
+		case input := <-quizChan:
+			if input == lineProblem.answer {
+				numCorrect++
+			}
 		}
 	}
 	fmt.Printf("--------------------\nCorrect: %d\nTotal: %d\nPercentage: %.2f%%", numCorrect, numTotal, (float32(numCorrect)/float32(numTotal))*100)
 }
 
-func parseCSVInput(csvInput []string) problem {
+func parseCSVInput(csvInput string) problem {
+	reader := csv.NewReader(strings.NewReader(csvInput))
+	readerInput, err := reader.Read()
+	if err != nil {
+		fmt.Printf("could not parse csv input: %v\n", err)
+		return problem{}
+	}
 	return problem{
-		question: strings.Join(csvInput[:len(csvInput)-1], ""),
-		answer:   csvInput[len(csvInput)-1],
+		question: strings.Join(readerInput[:len(readerInput)-1], ""),
+		answer:   readerInput[len(readerInput)-1],
 	}
 }
