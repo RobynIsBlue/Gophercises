@@ -21,14 +21,11 @@ func GetUserInputAndScan(filename string, timePerQuestion, timeTotal int) {
 		return
 	}
 	splitBody := strings.Split(string(body), "\r\n")
-
 	readerInput := bufio.NewReader(os.Stdin)
-	numTotal := len(splitBody)
-	numCorrect := 0
+	var numCorrect int
 	timer := time.NewTimer(time.Second * time.Duration(timePerQuestion))
 	quizChan := make(chan string)
 	bigTimer := time.NewTimer(time.Second * time.Duration(timeTotal))
-
 bigLoop:
 	for i, line := range splitBody {
 		timer.Reset(time.Second * time.Duration(timePerQuestion))
@@ -44,7 +41,6 @@ bigLoop:
 			}
 			quizChan <- input
 		}()
-
 		select {
 		case <-bigTimer.C:
 			break bigLoop
