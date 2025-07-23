@@ -1,13 +1,12 @@
 package main
 
 import (
-	"log"
-	"os"
-	"text/template"
+	"fmt"
+	"net/http"
 )
 
 type story struct {
-	Intro chapter `json:"intro"`
+	Story map[string]chapter
 }
 
 type Options struct {
@@ -22,10 +21,15 @@ type chapter struct {
 }
 
 func main() {
-	story, err := createDecodedMap("story.json")
-	if err != nil {
-		log.Fatalf("could not find story: %v", err)
-	}
-	tmpl, err := template.New("test").Parse("{{.Intro}} IS THE CHAPTER AND {{.Intro.Story}} IS THE STORY")
-	tmpl.Execute(os.Stdout, story)
+	// _, err := readStory("story.json")
+	// if err != nil {
+	// 	log.Fatalf("could not find story: %v", err)
+	// }
+	// comp := hello("world")
+	// comp.Render(context.Background(), os.Stdout)
+
+	// http.Handle("/", templ.Handler(comp))
+	fmt.Println("serving on port http://localhost:8080")
+	http.ListenAndServe(":8080", )
 }
+
