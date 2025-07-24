@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"html/template"
 	"net/http"
 )
 
@@ -20,16 +21,19 @@ type chapter struct {
 	Options []Options `json:"options"`
 }
 
-func main() {
-	// _, err := readStory("story.json")
-	// if err != nil {
-	// 	log.Fatalf("could not find story: %v", err)
-	// }
-	// comp := hello("world")
-	// comp.Render(context.Background(), os.Stdout)
+type world struct {
+	World string
+}
 
-	// http.Handle("/", templ.Handler(comp))
+func main() {
+	base, _ := template.ParseFiles("base.html")
+	fs := http.FileServer(http.Dir("./static/"))
+	http.Handle("/static/", http.StripPrefix("/static/", fs))
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		base.Execute(w, world{World: "worldy"})
+	})
+	http.Handle("/css/", http.StripPrefix("/css/", http.FileServer(http.Dir("./public/css"))))
 	fmt.Println("serving on port http://localhost:8080")
-	http.ListenAndServe(":8080", )
+	http.ListenAndServe(":8080", nil)
 }
 
