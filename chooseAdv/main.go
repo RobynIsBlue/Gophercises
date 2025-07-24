@@ -27,6 +27,9 @@ type world struct {
 
 func main() {
 	base, _ := template.ParseFiles("base.html")
+	fs := http.FileServer(http.Dir("./static/"))
+	http.Handle("/static/", http.StripPrefix("/static/", fs))
+	http.Handle("/css/", http.StripPrefix("/css/", http.FileServer(http.Dir("./public/css"))))
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		base.Execute(w, world{World: "worldy"})
 	})
