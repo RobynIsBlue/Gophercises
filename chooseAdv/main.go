@@ -3,14 +3,11 @@ package main
 import (
 	"fmt"
 	"html/template"
+	"log"
 	"net/http"
 )
 
-type story struct {
-	Story map[string]chapter
-}
-
-type Options struct {
+type Option struct {
 	Text string `json:"text"`
 	Arc  string `json:"arc"`
 }
@@ -18,26 +15,43 @@ type Options struct {
 type chapter struct {
 	Title   string    `json:"title"`
 	Story   []string  `json:"story"`
-	Options []Options `json:"options"`
+	Option []Option `json:"options"`
 }
 
-type world struct {
-	World string
+type parsed struct {
+	pStory map[string]chapter
+	pTemplate *template.Template
 }
 
 func main() {
-	base, _ := template.ParseFiles("base.html")
+	templ, err := template.ParseFiles("storyarctemplate.html")
+	if err != nil {
+		log.Printf("could not parse template: %s", err)
+	}
+	decMap, err := createDecodedMap("story.json")
+	if err != nil {
+		log.Printf("could not decode map template: %s", err)
+	}
+	parsedObj := parsed{
+		pStory: decMap,
+		pTemplate: templ,
+	}
 	fs := http.FileServer(http.Dir("./static/"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 	http.Handle("/css/", http.StripPrefix("/css/", http.FileServer(http.Dir("./public/css"))))
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		base.Execute(w, world{World: "worldy"})
-	})
+		http.ServeFile(w, r, "index.html")
+	})	
+	http.HandleFunc("/{story_arc}", parsedObj.chapterHTML)
 	fmt.Println("serving on port http://localhost:8080")
 	http.ListenAndServe(":8080", nil)
 }
 
-func serveHTML(w http.ResponseWriter, r *http.Request) {
+func (p parsed) chapterHTML(w http.ResponseWriter, r *http.Request) {
 	storyArc := r.PathValue("story_arc")
-	http.ServeFile(w, r, fmt.Sprintf("%s.html", storyArc))
+	fmt.Println(storyArc)
+	fmt.Println(p.pStory[storyArc])
+	p.pTemplate.Execute(w, p.pStory[storyArc])
 }
+
+
