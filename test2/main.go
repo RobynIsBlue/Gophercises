@@ -6,6 +6,8 @@ import (
 	"github.com/a-h/templ"
 )
 
+// howdy pardnur
+
 func main() {
 	comp := hello("world")
 	http.FileServer(http.Dir("/static/styles/"))
